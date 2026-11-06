@@ -4,9 +4,6 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths:
-      - 'Mawaqeet_AlMukalla_v2_fixed.zip'
-      - '.github/workflows/build-apk.yml'
 
 permissions:
   contents: read
@@ -15,7 +12,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout source
+      - name: Checkout project
         uses: actions/checkout@v4
 
       - name: Set up Java 17
@@ -35,59 +32,18 @@ jobs:
       - name: Install Android SDK components
         run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Extract the verified project archive
-        run: |
-          mkdir -p android-project
-          unzip -q Mawaqeet_AlMukalla_v2_fixed.zip -d android-project
-          test -s android-project/settings.gradle.kts
-          test -s android-project/app/build.gradle.kts
-
-      - name: Align Java and Kotlin bytecode targets
-        run: |
-          cat > android-project/app/build.gradle.kts <<'EOF'
-          plugins {
-              id("com.android.application")
-              id("org.jetbrains.kotlin.android")
-          }
-
-          android {
-              namespace = "com.example.mawaqeetalmukalla"
-              compileSdk = 35
-
-              defaultConfig {
-                  applicationId = "com.example.mawaqeetalmukalla"
-                  minSdk = 24
-                  targetSdk = 35
-                  versionCode = 1
-                  versionName = "1.0"
-              }
-
-              compileOptions {
-                  sourceCompatibility = JavaVersion.VERSION_17
-                  targetCompatibility = JavaVersion.VERSION_17
-              }
-
-              kotlinOptions {
-                  jvmTarget = "17"
-              }
-          }
-
-          dependencies {
-              implementation("androidx.core:core-ktx:1.15.0")
-              implementation("androidx.work:work-runtime-ktx:2.10.0")
-          }
-          EOF
-
       - name: Build debug APK
-        working-directory: android-project
         run: gradle --no-daemon --stacktrace clean assembleDebug
 
       - name: Verify APK
-        run: test -s android-project/app/build/outputs/apk/debug/app-debug.apk
+        run: |
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep "^package:"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: Mawaqeet-AlMukalla-APK
-          path: android-project/app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error

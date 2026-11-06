@@ -1,0 +1,98 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:layoutDirection="rtl"
+    android:padding="14dp"
+    android:background="#163D32">
+
+    <TextView
+        android:id="@+id/city"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="المكلا · حضرموت"
+        android:textColor="#C8DAD0"
+        android:textSize="12sp"
+        android:gravity="end" />
+
+    <TextView
+        android:id="@+id/next_prayer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="جارٍ تحميل المواقيت..."
+        android:textColor="#FFFFFF"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:gravity="end"
+        android:paddingTop="5dp" />
+
+    <Chronometer
+        android:id="@+id/countdown"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="end"
+        android:textColor="#E2B85E"
+        android:textSize="27sp"
+        android:textStyle="bold"
+        android:format="%s" />
+
+    <TextView
+        android:id="@+id/countdown_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="الوقت المتبقي للأذان"
+        android:textColor="#C8DAD0"
+        android:textSize="11sp"
+        android:gravity="end" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="7dp"
+        android:background="#49665B" />
+
+    <TextView
+        android:id="@+id/prayer_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="الفجر     --:--&#10;الظهر     --:--&#10;العصر     --:--&#10;المغرب     --:--&#10;العشاء     --:--"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        android:lineSpacingExtra="2dp"
+        android:gravity="end"
+        android:paddingTop="2dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingTop="7dp">
+
+        <TextView
+            android:id="@+id/iqama"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="مدة الإقامة قابلة للتعديل"
+            android:textColor="#E2B85E"
+            android:textSize="10sp"
+            android:gravity="end" />
+
+        <TextView
+            android:id="@+id/widget_refresh"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="تحديث"
+            android:textColor="#163D32"
+            android:textStyle="bold"
+            android:textSize="11sp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp"
+            android:background="#E2B85E" />
+    </LinearLayout>
+</LinearLayout>
