@@ -10,13 +10,13 @@ import android.os.SystemClock
 import android.widget.RemoteViews
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
+import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import androidx.work.Data
 import java.util.concurrent.TimeUnit
 
 class PrayerWidgetProvider : AppWidgetProvider() {
@@ -32,19 +32,26 @@ class PrayerWidgetProvider : AppWidgetProvider() {
     }
 
     override fun onDisabled(context: Context) {
-        val work = WorkManager.getInstance(context)
-        work.cancelUniqueWork(PERIODIC_WORK_NAME)
-        work.cancelUniqueWork(ONE_TIME_WORK_NAME)
+        WorkManager.getInstance(context).apply {
+            cancelUniquePeriodicWork(PERIODIC_WORK_NAME)
+            cancelUniqueWork(ONE_TIME_WORK_NAME)
+        }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         when (intent.action) {
-            ACTION_REFRESH -> enqueueRefresh(context, force = true)
+            ACTION_REFRESH -> {
+                updateAll(context)
+                enqueueRefresh(context, force = true)
+            }
             Intent.ACTION_TIME_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED,
-            Intent.ACTION_DATE_CHANGED -> {
+            Intent.ACTION_DATE_CHANGED,
+            Intent.ACTION_BOOT_COMPLETED,
+            Intent.ACTION_MY_PACKAGE_REPLACED -> {
                 updateAll(context)
+                scheduleDailyRefresh(context)
                 enqueueRefreshIfNeeded(context)
             }
         }
@@ -68,20 +75,17 @@ class PrayerWidgetProvider : AppWidgetProvider() {
 
         private fun scheduleDailyRefresh(context: Context) {
             val work = WorkManager.getInstance(context)
-            // Remove the old 15-minute polling schedule created by v1.0.
             work.cancelUniqueWork(LEGACY_WORK_NAME)
             val request = PeriodicWorkRequestBuilder<PrayerWorker>(24, TimeUnit.HOURS)
                 .setConstraints(constraints())
                 .build()
             work.enqueueUniquePeriodicWork(
-                PERIODIC_WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
-                request
+                PERIODIC_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, request
             )
         }
 
         private fun enqueueRefreshIfNeeded(context: Context) {
-            if (PrayerRepository.needsRefresh(context)) enqueueRefresh(context, force = false)
+            if (PrayerRepository.needsRefresh(context)) enqueueRefresh(context, false)
         }
 
         private fun enqueueRefresh(context: Context, force: Boolean) {
@@ -99,36 +103,35 @@ class PrayerWidgetProvider : AppWidgetProvider() {
 
         private fun updateWidget(context: Context, manager: AppWidgetManager, id: Int) {
             val views = RemoteViews(context.packageName, R.layout.prayer_widget)
-
             val refreshIntent = Intent(context, PrayerWidgetProvider::class.java).apply {
                 action = ACTION_REFRESH
             }
-            val refreshPendingIntent = PendingIntent.getBroadcast(
-                context, 1000 + id, refreshIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            views.setOnClickPendingIntent(
+                R.id.widget_refresh,
+                PendingIntent.getBroadcast(
+                    context, 1000 + id, refreshIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
             )
-            views.setOnClickPendingIntent(R.id.widget_refresh, refreshPendingIntent)
-
-            val openIntent = Intent(context, MainActivity::class.java)
             views.setOnClickPendingIntent(
                 R.id.widget_root,
                 PendingIntent.getActivity(
-                    context, 2000 + id, openIntent,
+                    context, 2000 + id, Intent(context, MainActivity::class.java),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
             )
 
             val times = PrayerRepository.storedTimes(context)
-            val formattedTimes = PrayerData.keys.indices.joinToString("\n") { index ->
+            val list = PrayerData.keys.indices.joinToString("\n") { index ->
                 val key = PrayerData.keys[index]
                 val value = times[key]?.let(PrayerData::arabicDigits) ?: "--:--"
                 "${PrayerData.names[index]}     $value"
             }
-            views.setTextViewText(R.id.prayer_list, formattedTimes)
+            views.setTextViewText(R.id.prayer_list, list)
 
-            val event = PrayerData.nextEvent(times, { key ->
+            val event = PrayerData.nextEvent(times) { key ->
                 PrayerRepository.iqamaMinutes(context, key)
-            })
+            }
             if (event == null) {
                 views.setTextViewText(R.id.next_prayer, "لم تُحمّل المواقيت بعد")
                 views.setTextViewText(R.id.countdown_label, "اضغط تحديث عند توفر الإنترنت")
@@ -138,12 +141,7 @@ class PrayerWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.next_prayer, event.title)
                 views.setTextViewText(R.id.countdown_label, event.countdownLabel)
                 val remaining = (event.targetMillis - System.currentTimeMillis()).coerceAtLeast(0L)
-                views.setChronometer(
-                    R.id.countdown,
-                    SystemClock.elapsedRealtime() + remaining,
-                    "%s",
-                    true
-                )
+                views.setChronometer(R.id.countdown, SystemClock.elapsedRealtime() + remaining, "%s", true)
                 views.setChronometerCountDown(R.id.countdown, true)
                 val minutes = PrayerRepository.iqamaMinutes(context, event.prayerKey)
                 views.setTextViewText(
