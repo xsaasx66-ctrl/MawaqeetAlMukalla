@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'Mawaqeet_AlMukalla_android_release_candidate.zip'
+      - 'Mawaqeet_AlMukalla_v2_fixed.zip'
       - '.github/workflows/build-apk.yml'
 
 permissions:
@@ -35,12 +35,48 @@ jobs:
       - name: Install Android SDK components
         run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Extract the corrected Android project
+      - name: Extract the verified project archive
         run: |
           mkdir -p android-project
-          unzip -q Mawaqeet_AlMukalla_android_release_candidate.zip -d android-project
+          unzip -q Mawaqeet_AlMukalla_v2_fixed.zip -d android-project
           test -s android-project/settings.gradle.kts
           test -s android-project/app/build.gradle.kts
+
+      - name: Align Java and Kotlin bytecode targets
+        run: |
+          cat > android-project/app/build.gradle.kts <<'EOF'
+          plugins {
+              id("com.android.application")
+              id("org.jetbrains.kotlin.android")
+          }
+
+          android {
+              namespace = "com.example.mawaqeetalmukalla"
+              compileSdk = 35
+
+              defaultConfig {
+                  applicationId = "com.example.mawaqeetalmukalla"
+                  minSdk = 24
+                  targetSdk = 35
+                  versionCode = 1
+                  versionName = "1.0"
+              }
+
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+          }
+
+          dependencies {
+              implementation("androidx.core:core-ktx:1.15.0")
+              implementation("androidx.work:work-runtime-ktx:2.10.0")
+          }
+          EOF
 
       - name: Build debug APK
         working-directory: android-project
