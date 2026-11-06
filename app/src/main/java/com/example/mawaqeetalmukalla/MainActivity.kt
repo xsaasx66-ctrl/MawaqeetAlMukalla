@@ -47,7 +47,7 @@ class MainActivity : Activity() {
             View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
 
         // Retire the 15-minute polling job used by version 1.0.
-        WorkManager.getInstance(applicationContext).cancelUniquePeriodicWork("prayer_times_refresh")
+        WorkManager.getInstance(applicationContext).cancelUniqueWork("prayer_times_refresh")
         setContentView(buildScreen())
         render()
         if (PrayerRepository.needsRefresh(applicationContext)) refreshTimes(false)
@@ -65,7 +65,7 @@ class MainActivity : Activity() {
 
     private fun buildScreen(): View {
         val scroll = ScrollView(this).apply {
-            fillViewport = true
+            isFillViewport = true
             setBackgroundColor(page)
             clipToPadding = false
         }
@@ -189,7 +189,7 @@ class MainActivity : Activity() {
         PrayerData.keys.forEach { key ->
             timeViews[key]?.text = times[key]?.let(PrayerData::arabicDigits) ?: "--:--"
         }
-        val event = PrayerData.nextEvent(times) { key -> PrayerRepository.iqamaMinutes(applicationContext, key) }
+        val event = PrayerData.nextEvent(times, { key -> PrayerRepository.iqamaMinutes(applicationContext, key) })
         if (event == null) {
             nextTitle.text = "لا توجد مواقيت محفوظة"
             countdownLabel.text = "حدّث المواقيت عند توفر الإنترنت"

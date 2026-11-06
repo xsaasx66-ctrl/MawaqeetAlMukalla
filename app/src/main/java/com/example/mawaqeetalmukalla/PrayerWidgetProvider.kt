@@ -33,7 +33,7 @@ class PrayerWidgetProvider : AppWidgetProvider() {
 
     override fun onDisabled(context: Context) {
         val work = WorkManager.getInstance(context)
-        work.cancelUniquePeriodicWork(PERIODIC_WORK_NAME)
+        work.cancelUniqueWork(PERIODIC_WORK_NAME)
         work.cancelUniqueWork(ONE_TIME_WORK_NAME)
     }
 
@@ -69,7 +69,7 @@ class PrayerWidgetProvider : AppWidgetProvider() {
         private fun scheduleDailyRefresh(context: Context) {
             val work = WorkManager.getInstance(context)
             // Remove the old 15-minute polling schedule created by v1.0.
-            work.cancelUniquePeriodicWork(LEGACY_WORK_NAME)
+            work.cancelUniqueWork(LEGACY_WORK_NAME)
             val request = PeriodicWorkRequestBuilder<PrayerWorker>(24, TimeUnit.HOURS)
                 .setConstraints(constraints())
                 .build()
@@ -126,9 +126,9 @@ class PrayerWidgetProvider : AppWidgetProvider() {
             }
             views.setTextViewText(R.id.prayer_list, formattedTimes)
 
-            val event = PrayerData.nextEvent(times) { key ->
+            val event = PrayerData.nextEvent(times, { key ->
                 PrayerRepository.iqamaMinutes(context, key)
-            }
+            })
             if (event == null) {
                 views.setTextViewText(R.id.next_prayer, "لم تُحمّل المواقيت بعد")
                 views.setTextViewText(R.id.countdown_label, "اضغط تحديث عند توفر الإنترنت")
