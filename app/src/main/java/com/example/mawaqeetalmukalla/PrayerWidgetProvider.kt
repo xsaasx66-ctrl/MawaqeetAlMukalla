@@ -33,7 +33,7 @@ class PrayerWidgetProvider : AppWidgetProvider() {
 
     override fun onDisabled(context: Context) {
         WorkManager.getInstance(context).apply {
-            cancelUniquePeriodicWork(PERIODIC_WORK_NAME)
+            cancelUniqueWork(PERIODIC_WORK_NAME)
             cancelUniqueWork(ONE_TIME_WORK_NAME)
         }
     }
@@ -129,9 +129,9 @@ class PrayerWidgetProvider : AppWidgetProvider() {
             }
             views.setTextViewText(R.id.prayer_list, list)
 
-            val event = PrayerData.nextEvent(times) { key ->
+            val event = PrayerData.nextEvent(times, { key ->
                 PrayerRepository.iqamaMinutes(context, key)
-            }
+            })
             if (event == null) {
                 views.setTextViewText(R.id.next_prayer, "لم تُحمّل المواقيت بعد")
                 views.setTextViewText(R.id.countdown_label, "اضغط تحديث عند توفر الإنترنت")
